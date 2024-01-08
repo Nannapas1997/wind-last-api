@@ -1,0 +1,260 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  user_id   Int        @id @default(autoincrement())
+  username  String     @unique
+  email     String     @unique
+  password  String
+  etc       String? // You can provide more specific fields in place of 'etc'
+  userRoles UserRole[]
+}
+
+model Role {
+  role_id         Int              @id @default(autoincrement())
+  role_name       String           @unique
+  description     String?
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+}
+
+model Permission {
+  permission_id   Int              @id @default(autoincrement())
+  permission_name String           @unique
+  description     String?
+  rolePermissions RolePermission[]
+}
+
+model UserRole {
+  user_id Int
+  role_id Int
+  user    User @relation(fields: [user_id], references: [user_id])
+  role    Role @relation(fields: [role_id], references: [role_id])
+
+  @@id([user_id, role_id])
+}
+
+model RolePermission {
+  role_id       Int
+  permission_id Int
+  action        String?
+  role          Role       @relation(fields: [role_id], references: [role_id])
+  permission    Permission @relation(fields: [permission_id], references: [permission_id])
+
+  @@id([role_id, permission_id])
+}
+
+model Owner {
+  id                            String   @id @default(uuid())
+  first_name                    String
+  last_name                     String
+  contact_number                String
+  identity_card_number          String
+  identity_card_expiration_date DateTime
+  current_address               String
+  Lands                         Land[]
+}
+
+model Land {
+  id                     String   @id @default(uuid())
+  owner_id               String
+  land_type              String
+  title_deed_number      String
+  area_in_rai            Float
+  area_in_ngan           Float
+  area_in_square_wa      Float
+  appraised_value        Float
+  appraisal_date         DateTime
+  land_status            String
+  additional_description String?
+  latitude               Float
+  longitude              Float
+  document_file          String?
+  remarks                String?
+  Owner                  Owner    @relation(fields: [owner_id], references: [id])
+  Leases                 Lease[]
+}
+
+model Lease {
+  id                       String   @id @default(uuid())
+  land_id                  String
+  contract_number          String
+  lease_date               DateTime
+  lease_expiration_date    DateTime
+  lease_rate_per_year      Float
+  payment_term             String
+  rented_area_in_rai       Float
+  rented_area_in_ngan      Float
+  rented_area_in_square_wa Float
+  payment_cycle            String
+  Land                     Land     @relation(fields: [land_id], references: [id])
+  project_id               Int?
+  project                  Project? @relation(fields: [project_id], references: [id])
+}
+
+model LeaseDetail {
+  id               Int     @id @default(autoincrement())
+  windTurbine      String?
+  propertyOwner    String?
+  contactNumber    String?
+  idCardNumber     String?
+  idCardExpiryDate String?
+  currentAddress   String?
+  landType         String?
+  numberPlot       String?
+  areaSize         String?
+  contractNumber   String?
+  leaseSigningDate String?
+  paymentCycle     String?
+  projectName      String?
+  download         Json?
+}
+
+model Project {
+  id                   Int                 @id @default(autoincrement())
+  name                 String
+  description          String?
+  detail_image         Json?
+  logo                 Json?
+  wind_spec_image      Json?
+  detail_raw_wind_data Json?
+  detail_wind_summary  Json?
+  detail_investment    Json?
+  maps_image           Json?
+  created_at           DateTime            @default(now())
+  updated_at           DateTime            @default(now()) @updatedAt
+  wind_turbines        WindTurbine[]
+  wind_data            WindData[]
+  wind_summary         WindSummary?
+  investments          Investment[]
+  project_media        ProjectMedia[]
+  community_activities CommunityActivity[]
+  related_documents    RelatedDocument[]
+  Lease                Lease[]
+}
+
+model WindTurbine {
+  id                  Int      @id @default(autoincrement())
+  project_id          Int
+  specification_image String?  @db.Text
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+  project             Project  @relation(fields: [project_id], references: [id])
+}
+
+model WindData {
+  id         Int      @id @default(autoincrement())
+  project_id Int
+  excel_file String   @db.Text
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  project    Project  @relation(fields: [project_id], references: [id])
+}
+
+model WindSummary {
+  id         Int      @id @default(autoincrement())
+  project_id Int      @unique
+  pdf_file   String   @db.Text
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  project    Project  @relation(fields: [project_id], references: [id])
+}
+
+model Investment {
+  id         Int      @id @default(autoincrement())
+  project_id Int
+  pdf_file   String   @db.Text
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  project    Project  @relation(fields: [project_id], references: [id])
+}
+
+model ProjectMedia {
+  id          Int      @id @default(autoincrement())
+  project_id  Int
+  media_type  String
+  media_file  String   @db.Text
+  description String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  project     Project  @relation(fields: [project_id], references: [id])
+}
+
+model CommunityActivity {
+  id                   Int      @id @default(autoincrement())
+  project_id           Int
+  activity_image       String   @db.Text
+  activity_description String?
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+  project              Project  @relation(fields: [project_id], references: [id])
+}
+
+model Document {
+  id                   Int      @id @default(autoincrement())
+  document_title       String
+  document_file        Json?
+  document_description String?
+  project_name         String
+  created_at           DateTime @default(now())
+  updated_at           DateTime @default(now()) @updatedAt
+}
+
+model RelatedDocument {
+  id             Int      @id @default(autoincrement())
+  project_id     Int
+  document_title String
+  document_file  String   @db.Text
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  project        Project  @relation(fields: [project_id], references: [id])
+}
+
+model MediaProject {
+  id           Int      @id @default(autoincrement())
+  project_name String
+  category     String
+  description  String?
+  file         Json?
+  type         String
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+}
+
+model MapsProject {
+  id             Int      @id @default(autoincrement())
+  project_name   String   @unique
+  width          Float?
+  height         Float?
+  originalWidth  Float?
+  originalHeight Float?
+  transform      String?
+  mapsUrl        String?
+  spacialAreaUrl String?
+  cityPlanUrl    String?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+}
+
+model MapsProjectDetail {
+  id           Int      @id @default(autoincrement())
+  project_name String
+  category     String?
+  path         Json?
+  path_type    String?
+  lease_id     String?
+  children     Json?
+  latitude     String?
+  longitude    String?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+}
